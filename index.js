@@ -4,16 +4,32 @@ const net = require('net');
 
 clients = [];
 
-server = net.createServer((socket) => {
+app.get('/', (req, res) => {
+    console.log('test');
+    result =  clients[0].write('data\n');
+    console.log('result of write: ' + result);
+});
+
+app.listen(3000);
+
+server = net.createServer()
+
+server.on('connection', (socket) => {
     
-    connection = socket.connect();
-    clients.push(connection);
-    console.log('new connection!');
+    socket.setEncoding('utf-8');
 
     socket.on('data', (data) => {
         console.log('data incoming:');
         console.log(data.toString());
-        socket.write('holla right back at ya');
+
+        var is_buffer_full = socket.write('response, yo! \n') ? console.log('data sent!')
+            : socket.pause();
+        
+    });
+
+    socket.on('drain', () => {
+        console.log('buffer cleared again, resume writing data');
+        socket.resume();
     });
 
     socket.on('error', (err) => {
@@ -21,6 +37,12 @@ server = net.createServer((socket) => {
         console.log(err);
     });
 
+    clients.push(socket);
+});
+
+
+server.on('connection', (s) => {
+    console.log('new connection to server, wth dude');
 });
 
 server.listen(3366, () => {
