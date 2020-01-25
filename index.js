@@ -16,11 +16,6 @@ app.get('/', (req, res) => {
     console.log('test');
    // result =  clients[0].write('data\n');
    // console.log('result of write: ' + result);
-    db.add_user(database_connection).then((result) => 
-    {
-        var parsed = JSON.parse(JSON.stringify(result[0]))
-        console.log(parsed);
-    });
 });
 
 app.get('/get/usernames', (req, res) => {
@@ -31,8 +26,10 @@ app.get('/get/usernames', (req, res) => {
 });
 
 app.post('/post/newuser', (req, res) => {
-    db.add_user(database.connection).then((result) => {
-        console.log(result);
+    // username hard coded now for testing purposes
+    var data = {username: 'shoole'};
+    db.add_user(database_connection, data).then((uid) => {
+       console.log(uid); 
     });
 });
 

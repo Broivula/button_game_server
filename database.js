@@ -21,12 +21,17 @@ const executeQuery = (conn, query, params) => {
 };
 
 const add_user = (conn, data) => {
-    var username = 'kikkel';
+    var username = data.username;
     var uid = uuidv4();
-    return executeQuery(conn,
+    return new Promise ((resolve, reject) => {
+        executeQuery(conn,
        'INSERT INTO user_info (UID, username) VALUES (?, ?);',
         [uid, username]
-    )
+    ).then((res) => {
+        // user with uid generated, now return the new uid
+        resolve(uid);
+    });
+    })
 };
 
 const get_usernames = (conn) => {
