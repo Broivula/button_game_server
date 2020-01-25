@@ -1,16 +1,45 @@
 const express = require('express');
 const app = express();
 const net = require('net');
-
+const db = require('./database');
 clients = [];
+
+// setting up database connection
+
+var database_connection = db.connect();
+
+//console.log(result);
+
+// routing for the express server, handling regular connections
 
 app.get('/', (req, res) => {
     console.log('test');
-    result =  clients[0].write('data\n');
-    console.log('result of write: ' + result);
+   // result =  clients[0].write('data\n');
+   // console.log('result of write: ' + result);
+    db.add_user(database_connection).then((result) => 
+    {
+        var parsed = JSON.parse(JSON.stringify(result[0]))
+        console.log(parsed);
+    });
+});
+
+app.get('/get/usernames', (req, res) => {
+    db.get_usernames(database_connection).then((result) => {
+        var parsed = JSON.parse(JSON.stringify(result));
+        console.log(parsed);
+    });
+});
+
+app.post('/post/newuser', (req, res) => {
+    db.add_user(database.connection).then((result) => {
+        console.log(result);
+    });
 });
 
 app.listen(3000);
+
+
+// configuration for the socket connections
 
 server = net.createServer()
 
