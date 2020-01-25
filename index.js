@@ -18,10 +18,15 @@ app.get('/', (req, res) => {
    // console.log('result of write: ' + result);
 });
 
-app.get('/get/usernames', (req, res) => {
-    db.get_usernames(database_connection).then((result) => {
-        var parsed = JSON.parse(JSON.stringify(result));
-        console.log(parsed);
+app.get('/get/check_user_availability', (req, res) => {
+    var username = req.params.username;
+    db.checkToken(database_connection, 'proof_of_concept_token_for_button_game', db.checkIfUserExists(database_connection, username)).then((result) => {
+        var parsed = Object.values(result[0]);
+        var available;
+        parsed == 1 ? available = false : available = true;
+        res.json({username_available: available });
+    }).catch(err => {
+        res.json({error_msg: err})
     });
 });
 
@@ -32,6 +37,11 @@ app.post('/post/newuser', (req, res) => {
        console.log(uid); 
     });
 });
+
+const error_msg = (res) => {
+    console.log('aaay, mistake bruh');
+    res.json({err: 'token authentication failure'})
+}
 
 app.listen(3000);
 

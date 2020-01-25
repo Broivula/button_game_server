@@ -11,6 +11,24 @@ const connect = () => {
     });
 };
 
+
+const checkToken = ((conn, token, func) => {
+    return new Promise((resolve, reject) => {
+        conn.query('SELECT * FROM token_table', (err, result) => {
+            var parsed_result = JSON.parse(JSON.stringify(result[0]));
+            //console.log(parsed_result.TOKEN);
+            if(token === parsed_result.TOKEN){
+                console.log('token was correct!');
+                resolve(func);
+            }
+            else{
+                console.log('token was incorrect!');
+                reject('error, token authentication failed.');
+            }
+        });
+    });
+});
+
 const executeQuery = (conn, query, params) => {
     return new Promise ((resolve, reject) => {
         conn.query(query, params, (err, result) => {
@@ -20,7 +38,7 @@ const executeQuery = (conn, query, params) => {
     });
 };
 
-const add_user = (conn, data) => {
+const addUser = (conn, data) => {
     var username = data.username;
     var uid = uuidv4();
     return new Promise ((resolve, reject) => {
@@ -34,13 +52,15 @@ const add_user = (conn, data) => {
     })
 };
 
-const get_usernames = (conn) => {
-    var query = 'SELECT GROUP_CONCAT(username) FROM user_info' 
-    return executeQuery(conn, query);
+const checkIfUserExists = (conn, username) => {
+    var query = 'SELECT EXISTS(SELECT * FROM user_info WHERE username=?);' 
+    return executeQuery(conn, query, [username])
 };
+
 
 module.exports = {
     connect: connect,
-    add_user: add_user,
-    get_usernames: get_usernames,
+    addUser: addUser,
+    checkIfUserExists: checkIfUserExists,
+    checkToken: checkToken,
 }
