@@ -19,6 +19,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/get/check_user_availability', (req, res) => {
+    // token value hardcoded for testing purposes
     var username = req.params.username;
     db.checkToken(database_connection, 'proof_of_concept_token_for_button_game', db.checkIfUserExists(database_connection, username)).then((result) => {
         var parsed = Object.values(result[0]);
@@ -26,7 +27,7 @@ app.get('/get/check_user_availability', (req, res) => {
         parsed == 1 ? available = false : available = true;
         res.json({username_available: available });
     }).catch(err => {
-        res.json({error_msg: err})
+        res.json({error_msg: 'error checking username availability'})
     });
 });
 
@@ -35,6 +36,8 @@ app.post('/post/newuser', (req, res) => {
     var data = {username: 'shoole'};
     db.add_user(database_connection, data).then((uid) => {
        console.log(uid); 
+    }).catch(err => {
+        res.json({error_msg: 'error inserting a new user to server db'})
     });
 });
 
