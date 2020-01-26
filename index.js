@@ -2,7 +2,13 @@ const express = require('express');
 const app = express();
 const net = require('net');
 const db = require('./database');
+const bodyParser = require('body-parser');
 clients = [];
+
+
+// setting up server
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
 
 // setting up database connection
 
@@ -18,10 +24,12 @@ app.get('/', (req, res) => {
    // console.log('result of write: ' + result);
 });
 
-app.get('/get/check_user_availability', (req, res) => {
+app.post('/get/check_user_availability', (req, res) => {
     // token value hardcoded for testing purposes
-    var username = req.params.username;
-    db.checkToken(database_connection, 'proof_of_concept_token_for_button_game', db.checkIfUserExists(database_connection, username)).then((result) => {
+    console.log(req.get('Authorization'));
+    var token = req.get('Authorization');
+    var username = req.body.username;
+    db.checkToken(database_connection, token, db.checkIfUserExists(database_connection, username)).then((result) => {
         var parsed = Object.values(result[0]);
         var available;
         parsed == 1 ? available = false : available = true;
