@@ -24,11 +24,10 @@ app.get('/', (req, res) => {
    // console.log('result of write: ' + result);
 });
 
-app.post('/get/check_user_availability', (req, res) => {
-    // token value hardcoded for testing purposes
-    console.log(req.get('Authorization'));
+app.post('/post/check_user_availability', (req, res) => {
     var token = req.get('Authorization');
     var username = req.body.username;
+    console.log('testing for username: ' + username);
     db.checkToken(database_connection, token, db.checkIfUserExists(database_connection, username)).then((result) => {
         var parsed = Object.values(result[0]);
         var available;
@@ -41,12 +40,23 @@ app.post('/get/check_user_availability', (req, res) => {
 
 app.post('/post/newuser', (req, res) => {
     // username hard coded now for testing purposes
-    var data = {username: 'shoole'};
+    var token = req.get('Authorization');
+    var username = req.body.username;
+    db.checkToken(database_connection, token, db.addUser(database_connection, username)).then((result) => {
+        console.log(result);
+        res.json({uid: result});
+    }).catch(err => {
+        console.log('error adding a new user');
+        console.log(err);
+        res.json({error_msg: 'error inserting a new user to server db'});
+    });
+        /*
     db.add_user(database_connection, data).then((uid) => {
        console.log(uid); 
     }).catch(err => {
         res.json({error_msg: 'error inserting a new user to server db'})
     });
+    */
 });
 
 const error_msg = (res) => {

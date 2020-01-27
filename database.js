@@ -18,7 +18,6 @@ const checkToken = ((conn, token, func) => {
             var parsed_result = JSON.parse(JSON.stringify(result[0]));
             //console.log(parsed_result.TOKEN);
             if(token === parsed_result.TOKEN){
-                console.log('token was correct!');
                 resolve(func);
             }
             else{
@@ -38,8 +37,7 @@ const executeQuery = (conn, query, params) => {
     });
 };
 
-const addUser = (conn, data) => {
-    var username = data.username;
+const addUser = (conn, username) => {
     var uid = uuidv4();
     return new Promise ((resolve, reject) => {
         executeQuery(conn,
