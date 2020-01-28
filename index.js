@@ -15,30 +15,32 @@ app.use(bodyParser.urlencoded({extended: false}));
 
 var database_connection = db.connect();
 
-//console.log(result);
 
 // routing for the express server, handling regular connections
 
 app.get('/', (req, res) => {
-    console.log('test');
-   // result =  clients[0].write('data\n');
-   // console.log('result of write: ' + result);
-
-   clients.forEach(client => {
- //      console.log(client);
-   });
-
-    var game_test = game.initiateGame(filterClients(2));
-    rooms.push(game_test);
-
-   //console.log(clients.filter((client) => {return client.roomInfo==1}));
-   replyFunc(filterClients(1), 'message only in this room \n ');
+    instantiateGameRooms();
+ //  replyFunc(filterClients(1), 'message only in this room \n ');
 
 });
 
 app.get('/test', (req, res) => {
-    game.addClick(rooms[0], 2)
+   // game.addClick(rooms[0], 2)
+    var data = getGameRoomsData();
+    data.forEach(room => {console.log(room)});
 })
+
+app.get('/get/rooms_data', (req, res) => {
+    var token = req.get('Authorization');
+
+    db.checkToken(database_connection, token).then((result => {
+        if(result){
+            res.json(getGameRoomsData());
+        }else{
+            res.json({error_msg: 'token auth failure'});
+        }
+    }))
+});
 
 app.post('/post/check_user_availability', (req, res) => {
     var token = req.get('Authorization');
@@ -66,13 +68,6 @@ app.post('/post/newuser', (req, res) => {
         console.log(err);
         res.json({error_msg: 'error inserting a new user to server db'});
     });
-        /*
-    db.add_user(database_connection, data).then((uid) => {
-       console.log(uid); 
-    }).catch(err => {
-        res.json({error_msg: 'error inserting a new user to server db'})
-    });
-    */
 });
 
 const error_msg = (res) => {
@@ -82,6 +77,23 @@ const error_msg = (res) => {
 
 app.listen(3000);
 
+// routing functions
+
+const getGameRoomsData = () => {
+    return  rooms.map(room => {
+    return({
+        roomNumber : room.roomNumber,
+        playerCount : room.clients.length,
+        curClick : room.clickAmount,
+    });
+   })    
+}
+
+const instantiateGameRooms = () => {
+    for (var i = 1; i < 4; i++){
+       rooms.push(game.initiateGame(i))
+    }
+}
 
 // configuration for the socket connections
 
@@ -131,27 +143,31 @@ server.listen(3366, () => {
     console.log('server started, listening to port 3366');
 });
 
+// socket communication functions
 const sendDataInRoom = (data) => {
     var room = data.room;
     var msg = data.msg;
 }
 
 const createNewConnection = (data) => {
-   const connectionData =
+   const clientData =
    {
        socket : data.socket,
        username : data.username,
        roomNumber : data.roomNumber
    };
-    console.log(connectionData.roomNumber);
-    console.log(connectionData.username);
-    clients.push(connectionData);
+    clients.push(clientData);
+    addClientToRoom(clientData);
 };
+
+const addClientToRoom = (clientData) => {
+    rooms.filter((room) => { return room.roomNumber == clientData.roomNumber})[0].clients.push(clientData);
+}
 
 const replyFunc = (arr, data) => {arr.forEach(client =>{
     client.socket.write(data)
     })
 };
 
-const filterClients = (room) => clients.filter((client => {return client.roomInfo== room}))
+const filterClients = (room) => clients.filter((client => {return client.roomNumber== room}))
 

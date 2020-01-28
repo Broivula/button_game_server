@@ -16,9 +16,10 @@ const checkToken = ((conn, token, func) => {
     return new Promise((resolve, reject) => {
         conn.query('SELECT * FROM token_table', (err, result) => {
             var parsed_result = JSON.parse(JSON.stringify(result[0]));
-            //console.log(parsed_result.TOKEN);
             if(token === parsed_result.TOKEN){
-                resolve(func);
+                // if there was no function given, respond with
+                // just the result of token check
+                func != undefined ? resolve(func) : resolve(true)
             }
             else{
                 console.log('token was incorrect!');

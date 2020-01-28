@@ -1,25 +1,25 @@
 require('net');
 
-const initiateGame = (client_list, room_number) => {
+const initiateGame = (roomNumber) => {
     return {
-        clients : client_list,
-        room_number : room_number,
-        click_amount : 1,
-        turn_holder : client_list[0]
+        clients : [],
+        roomNumber : roomNumber,
+        clickAmount : 1,
+        turnHolder : 0
     }
 }
 
 
-const addClick = (room_data) => {
+const addClick = (roomData) => {
 
     console.log('add click function, inc roomdata: ')
-    console.log(room_data);
-    var new_click = room_data.click_amount + 1;
-    if(new_click == 3){
-        room_data.turn_holder.socket.write("congrats, you hit 3!")
+    console.log(roomData);
+    var newClickAmount = room_data.clickAmount + 1;
+    if(newClickAmount == 3){
+        roomData.turnHolder.socket.write("congrats, you hit 3!")
     }
-    room_data.click_amount = new_click;
-    return room_data;
+    roomData.clickAmount = newClickAmount;
+    return roomData;
 }
 
 module.exports = {
