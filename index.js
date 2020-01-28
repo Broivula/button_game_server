@@ -2,9 +2,10 @@ const express = require('express');
 const app = express();
 const net = require('net');
 const db = require('./database');
+const game = require('./game_file');
 const bodyParser = require('body-parser');
-clients = [];
-
+var clients = [];
+var rooms = [];
 
 // setting up server
 app.use(bodyParser.json());
@@ -22,7 +23,22 @@ app.get('/', (req, res) => {
     console.log('test');
    // result =  clients[0].write('data\n');
    // console.log('result of write: ' + result);
+
+   clients.forEach(client => {
+ //      console.log(client);
+   });
+
+    var game_test = game.initiateGame(filterClients(2));
+    rooms.push(game_test);
+
+   //console.log(clients.filter((client) => {return client.roomInfo==1}));
+   replyFunc(filterClients(1), 'message only in this room \n ');
+
 });
+
+app.get('/test', (req, res) => {
+    game.addClick(rooms[0], 2)
+})
 
 app.post('/post/check_user_availability', (req, res) => {
     var token = req.get('Authorization');
@@ -76,12 +92,22 @@ server.on('connection', (socket) => {
     socket.setEncoding('utf-8');
 
     socket.on('data', (data) => {
-        console.log('data incoming:');
-        console.log(data.toString());
+        if(data.length > 2){
+            console.log('data incoming:');
+            var parsedData = JSON.parse(data.toString());
+            console.log(parsedData);
 
-        var is_buffer_full = socket.write('response, yo! \n') ? console.log('data sent!')
-            : socket.pause();
+             createNewConnection({
+                 socket : socket,
+                 username : parsedData.username,
+                 roomNumber : parsedData.roomNumber
+             });
+
+             var is_buffer_full = socket.write('response, yo! \n') ? console.log('data sent!')
+                    : socket.pause();
         
+        //        server.getConnections((err, count) => {console.log('number of connections ' + count)});
+        };
     });
 
     socket.on('drain', () => {
@@ -91,10 +117,9 @@ server.on('connection', (socket) => {
 
     socket.on('error', (err) => {
         console.log('something went wrong..');
-        console.log(err);
+        Vconsole.log(err);
     });
 
-    clients.push(socket);
 });
 
 
@@ -105,4 +130,28 @@ server.on('connection', (s) => {
 server.listen(3366, () => {
     console.log('server started, listening to port 3366');
 });
+
+const sendDataInRoom = (data) => {
+    var room = data.room;
+    var msg = data.msg;
+}
+
+const createNewConnection = (data) => {
+   const connectionData =
+   {
+       socket : data.socket,
+       username : data.username,
+       roomNumber : data.roomNumber
+   };
+    console.log(connectionData.roomNumber);
+    console.log(connectionData.username);
+    clients.push(connectionData);
+};
+
+const replyFunc = (arr, data) => {arr.forEach(client =>{
+    client.socket.write(data)
+    })
+};
+
+const filterClients = (room) => clients.filter((client => {return client.roomInfo== room}))
 
