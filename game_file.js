@@ -1,3 +1,4 @@
+'use strict';
 require('net');
 
 const initiateGame = (roomNumber) => {
@@ -12,19 +13,24 @@ const initiateGame = (roomNumber) => {
 
 const addClick = (roomData) => {
 
-    console.log('add click function, inc roomdata: ')
+    console.log('add click function, inc roomdata: ');
     console.log(roomData);
-    var newClickAmount = room_data.clickAmount + 1;
-    if(newClickAmount == 3){
-        roomData.turnHolder.socket.write("congrats, you hit 3!")
+    return roomData.clickAmount + 1;
+
+};
+
+const checkClick = (clickAmount) => {
+    if((clickAmount % 100) === 0){
+        return clickAmount % 500 === 0 ? 250 : 100
+    }else{
+        return 10
     }
-    roomData.clickAmount = newClickAmount;
-    return roomData;
-}
+};
 
 module.exports = {
 
     initiateGame : initiateGame, 
     addClick : addClick,
+    checkClick : checkClick,
 
 }
