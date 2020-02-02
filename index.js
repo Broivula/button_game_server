@@ -109,7 +109,7 @@ server.on('connection', (socket) => {
     socket.setEncoding('utf-8');
 
     socket.on('data', (data) => {
-        if(data.length > 2){
+        if(data.length > 5){
             try{
                 console.log('data incoming:');
                 let parsedData = JSON.parse(data.toString());
@@ -209,7 +209,7 @@ server.on('connection', (socket) => {
 
     socket.on('error', (err) => {
         console.log('something went wrong..');
-        Vconsole.log(err);
+        console.log(err);
     });
 
 });
@@ -230,13 +230,13 @@ const updatePlayerScore = () => {
 };
 
 const sendDataToClient = (client, data) => {
-    client.write(constructMessage(data))
+    let isBufferFull =  client.socket.write(constructMessage(data) + '\n') ? console.log('data sent') : client.socket.pause();
 };
 
 const sendDataToRoomClients = (clients, data) => {
     try{
         clients.forEach(client =>{
-        let isBufferFull = sendDataToClient(client.socket, data) ? console.log('data sent succesfully'): socket.pause();
+        sendDataToClient(client, data) 
         })
     }catch (err) {console.log(err)}
 
