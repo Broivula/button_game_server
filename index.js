@@ -6,7 +6,6 @@ const db = require('./database');
 const game = require('./game_file');
 const bodyParser = require('body-parser');
 const maxClientsPerRoom = 10;
-var clients = [];
 var rooms = [];
 
 // setting up server
@@ -20,8 +19,6 @@ const database_connection = db.connect();
 // routing for the express server, handling regular connections
 
 app.get('/', (req, res) => {
- //  replyFunc(filterClients(1), 'message only in this room \n ');
-    //console.log(getRoomData(1).clients < 10)
     db.pipeline(database_connection, 'proof_of_concept_token_for_button_game', db.getRoomScores(database_connection, 1, getRoomPlayerList(1) )).then((res => {
             let parsed = JSON.parse(JSON.stringify(res));
             console.log(parsed);
@@ -193,6 +190,16 @@ server.on('connection', (socket) => {
                                 ));
                             })
                         }
+                        break;
+
+                    case 'EXIT_ROOM':
+                        removeClientFromRoom(socket);
+                        break;
+
+                     default:
+                        // default case
+                        // just log something, I guess
+                        console.log('user msg hit the default case -> no event defined')
                 }
 
            }catch(err){
@@ -212,6 +219,11 @@ server.on('connection', (socket) => {
         console.log(err);
     });
 
+    socket.on('close', (data)=> {
+        console.log('socket closed');
+        removeClientFromRoom(socket); 
+    });
+
 });
 
 
@@ -220,14 +232,6 @@ server.listen(3366, () => {
 });
 
 // socket communication functions
-const sendDataInRoom = (data) => {
-    var room = data.room;
-    var msg = data.msg;
-}
-
-const updatePlayerScore = () => {
-
-};
 
 const sendDataToClient = (client, data) => {
     let isBufferFull =  client.socket.write(constructMessage(data) + '\n') ? console.log('data sent') : client.socket.pause();
@@ -258,7 +262,6 @@ const createNewConnection = (data) => {
        username : data.username,
        roomNumber : data.roomNumber
    };
-    clients.push(clientData);
     addClientToRoom(clientData);
 };
 
@@ -282,9 +285,11 @@ const getRoomPlayerList = (roomNumber) => {
     return getRoomData(roomNumber).clients.map((client) => {return client.username})
 };
 
-
-
-const filterClients = (room) => clients.filter((client => {return client.roomNumber== room}));
+const removeClientFromRoom = (client) => {
+  rooms.forEach((room) => {
+      room.clients = room.clients.filter((c) => {return c.socket !== client});
+  });
+}
 
 // set up the game rooms
 
