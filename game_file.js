@@ -21,9 +21,9 @@ const addClick = (roomData) => {
 
 const checkClick = (clickAmount) => {
     if((clickAmount % 100) === 0){
-        return clickAmount % 500 === 0 ? 250 : 100
+        return clickAmount % 500 === 0 ? 250 : 40
     }else{
-        return 10
+        return 5 
     }
 };
 
