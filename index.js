@@ -8,6 +8,7 @@ const game = require('./game_file');
 
 const maxClientsPerRoom = 10;
 const rooms = [];
+const startingScore = 20;
 
 // setting up server
 app.use(bodyParser.json());
@@ -113,7 +114,8 @@ server.on('connection', (socket) => {
           case 'JOIN_ROOM':
             if (checkIfRoomAvailable(parsedData.roomNumber)) {
               const roomData = getRoomData(parsedData.roomNumber);
-              db.pipeline(database_connection, parsedData.token).then((res, err) => {
+              // check the token
+              db.pipeline(database_connection, parsedData.token).then(() => {
                 createNewConnection({
                   socket,
                   username: parsedData.username,
@@ -121,17 +123,29 @@ server.on('connection', (socket) => {
                 });
 
                 // connection created, player has joined the room. now, send the room scores and relevant data to them.
-                db.pipeline(database_connection, parsedData.token, db.getRoomScores(database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber))).then(((res) => {
-                  const turnHolder = roomData.clients[roomData.turnHolder] === socket;
-                  const gameScores = JSON.parse(JSON.stringify(res));
-                  const msgData = {
-                    roomNumber: parsedData.roomNumber,
-                    clickAmount: roomData.clickAmount,
-                    turnHolder,
-                    scores: gameScores,
-                    didClickWin: false,
-                  };
-                  sendDataToRoomClients(roomData.clients, { statusCode: 200, msg: msgData });
+                // first, check if player has a current score in the room --if not, add them there
+                db.checkIfUserHasScore(database_connection, parsedData.username, parsedData.roomNumber).then((res => {
+                  console.log('user score status: ');
+                  const parsed = Object.values(res[0]);
+                  console.log(parsed[0]);
+                  // no score was found, add starting score in the table
+                  if(parsed[0] === 0){
+                    console.log('new user, create a score for this room!');
+                    db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, startingScore);
+                  }
+                  const players = getRoomPlayerList(parsedData.roomNumber);
+                  db.getRoomScores(database_connection, parsedData.roomNumber, players).then(((res) => {
+                    const gameScores = JSON.parse(JSON.stringify(res));
+                    const msgData = {
+                      roomNumber: parsedData.roomNumber,
+                      clickAmount: roomData.clickAmount,
+                      turnHolder : roomData.turnHolder,
+                      players : players,
+                      scores: gameScores,
+                      didClickWin: false,
+                    };
+                    sendDataToRoomClients(roomData.clients, { statusCode: 200, msg: msgData });
+                }));
                 }));
               }).catch((err) => {
                 console.log('invalid data sent via socket');
@@ -166,17 +180,19 @@ server.on('connection', (socket) => {
               console.log('starting the chain, with following values:');
               console.log(`score: ${playerScore}`);
               // update the database
-              db.pipeline(database_connection, parsedData.token, db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, playerScore)).then(() => {
+              db.pipeline(database_connection, parsedData.token, db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, playerScore))
+                    .then(() => {
                 // player score updated, send the new scores to all clients
                 // ..so first get the new scores
                 console.log('updating the score was succesfull, now to get the scores..');
-                db.pipeline(database_connection, parsedData.token, db.getRoomScores(database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber))).then(((res) => {
-                  const turnHolder = roomData.clients[roomData.turnHolder] === socket;
+                db.pipeline(database_connection, parsedData.token, db.getRoomScores
+                  (database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber)))
+                      .then(((res) => {
                   const gameScores = JSON.parse(JSON.stringify(res));
                   const msgData = {
                     roomNumber: parsedData.roomNumber,
                     clickAmount: newClickAmount,
-                    turnHolder,
+                    turnHolder : roomData.turnHolder,
                     scores: gameScores,
                     didClickWin,
                   };
@@ -189,6 +205,7 @@ server.on('connection', (socket) => {
 
           case 'EXIT_ROOM':
             removeClientFromRoom(socket);
+            socket.end();
             break;
 
           default:

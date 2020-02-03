@@ -63,8 +63,12 @@ const checkIfUserExists = (conn, username) => executeQuery(conn,
   'SELECT EXISTS(SELECT * FROM user_info WHERE username=?);',
   [username]);
 
+const checkIfUserHasScore = (conn, username, room) => executeQuery(conn, 
+  'SELECT EXISTS (SELECT * FROM game_scores_table WHERE room=? AND username=?);',
+    [room, username]);
+
 const getRoomScores = (conn, room, players) => executeQuery(conn,
-  'SELECT username, room, score FROM game_scores_table WHERE room=? AND username IN (?);',
+  'SELECT username, score FROM game_scores_table WHERE room=? AND username IN (?);',
   [room, players]);
 
 const errorHandler = (err) => {
@@ -80,4 +84,5 @@ module.exports = {
   pipeline,
   updatePlayerScore,
   getRoomScores,
+  checkIfUserHasScore,
 };
