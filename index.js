@@ -108,14 +108,14 @@ server.on('connection', (socket) => {
       try {
         console.log('data incoming:');
         const parsedData = JSON.parse(data.toString());
-        console.log(parsedData);
+        // check the token
+        db.pipeline(database_connection, parsedData.token).then(() => {
         switch (parsedData.event) {
           // if the incoming data is aiming to join a room
           case 'JOIN_ROOM':
             if (checkIfRoomAvailable(parsedData.roomNumber)) {
               const roomData = getRoomData(parsedData.roomNumber);
-              // check the token
-              db.pipeline(database_connection, parsedData.token).then(() => {
+
                 createNewConnection({
                   socket,
                   username: parsedData.username,
@@ -135,22 +135,10 @@ server.on('connection', (socket) => {
                   }
                   const players = getRoomPlayerList(parsedData.roomNumber);
                   db.getRoomScores(database_connection, parsedData.roomNumber, players).then(((res) => {
-                    const gameScores = JSON.parse(JSON.stringify(res));
-                    const msgData = {
-                      roomNumber: parsedData.roomNumber,
-                      clickAmount: roomData.clickAmount,
-                      turnHolder : roomData.turnHolder,
-                      players : players,
-                      scores: gameScores,
-                      didClickWin: false,
-                    };
-                    sendDataToRoomClients(roomData.clients, { statusCode: 200, msg: msgData });
+                    sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+                  }));
                 }));
-                }));
-              }).catch((err) => {
-                console.log('invalid data sent via socket');
-                console.log(err);
-              });
+
             } else {
               // room was full, respond with appropriate message
               sendDataToClient(socket, { statusCode: 400, msg: 'room full bruh' });
@@ -162,13 +150,16 @@ server.on('connection', (socket) => {
             if (parsedData.playerScore > 0) {
               // now we can do stuff
               // first update the gamestate data
+              console.log('received msg in send_click, starting process now..');
               const roomData = getRoomData(parsedData.roomNumber);
               const newClickAmount = game.addClick(roomData);
               let { playerScore } = parsedData;
               let didClickWin = false;
+              console.log('old click score was: ' + roomData.clickAmount)
 
               updateGameRoomClickAmount(newClickAmount, parsedData.roomNumber);
 
+              console.log('roomClickAmount updated, new amount:' + newClickAmount);
               // check if new clickamount wins anything
               if (newClickAmount % 10 === 0) {
                 playerScore += game.checkClick(newClickAmount);
@@ -176,30 +167,19 @@ server.on('connection', (socket) => {
               } else {
                 playerScore--;
               }
-
-              console.log('starting the chain, with following values:');
-              console.log(`score: ${playerScore}`);
               // update the database
-              db.pipeline(database_connection, parsedData.token, db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, playerScore))
+              db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, playerScore)
                     .then(() => {
                 // player score updated, send the new scores to all clients
                 // ..so first get the new scores
                 console.log('updating the score was succesfull, now to get the scores..');
-                db.pipeline(database_connection, parsedData.token, db.getRoomScores
-                  (database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber)))
+               db.getRoomScores
+                  (database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber))
                       .then(((res) => {
-                  const gameScores = JSON.parse(JSON.stringify(res));
-                  const msgData = {
-                    roomNumber: parsedData.roomNumber,
-                    clickAmount: newClickAmount,
-                    turnHolder : roomData.turnHolder,
-                    scores: gameScores,
-                    didClickWin,
-                  };
-                  sendDataToRoomClients(roomData.clients, { statusCode: 200, msg: msgData });
-                }
-                ));
-              });
+                        sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients);
+                      }
+                      ));
+                    });
             }
             break;
 
@@ -208,11 +188,24 @@ server.on('connection', (socket) => {
             socket.end();
             break;
 
+          case 'NEW_GAME':
+            // what we need to do, is add starting points to client and send other players the new data
+            const roomData = getRoomData(parsedData.roomNumber);
+                db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, startingScore).then(() => {
+                  db.getRoomScores(database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber)).then((res) => {
+                    sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+                  })
+                });
+                break;
           default:
             // default case
             // just log something, I guess
             console.log('user msg hit the default case -> no event defined');
-        }
+            break;
+        } }).catch((err) => {
+          console.log('invalid data sent via socket');
+          console.log(err);
+        });
       } catch (err) {
         console.log('error parsing incoming socket data');
         console.log(err);
@@ -241,8 +234,22 @@ server.listen(3366, () => {
   console.log('server started, listening to port 3366');
 });
 
-// socket communication functions
+const sendRoomScoresToClients = (roomNumber, gameScores, clickAmount, turnHolder, didClickWin, clients) =>{
+  const players = getRoomPlayerList(roomNumber);
+  const scores = JSON.parse(JSON.stringify(gameScores));
+  const msgData = {
+    roomNumber: roomNumber,
+    clickAmount: clickAmount,
+    turnHolder : turnHolder,
+    scores: scores,
+    players: players,
+    didClickWin,
+  };
 
+  sendDataToRoomClients(clients, { statusCode: 200, msg: msgData });
+};
+
+// socket communication functions
 const sendDataToClient = (client, data) => {
   const isBufferFull = client.socket.write(`${constructMessage(data)}\n`) ? console.log('data sent') : client.socket.pause();
 };

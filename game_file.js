@@ -4,14 +4,12 @@ require('net');
 const initiateGame = (roomNumber) => ({
   clients: [],
   roomNumber,
-  clickAmount: 1,
+  clickAmount: 0,
   turnHolder: 0,
 });
 
 
 const addClick = (roomData) => {
-  console.log('add click function, inc roomdata: ');
-  console.log(roomData);
   return roomData.clickAmount + 1;
 };
 
