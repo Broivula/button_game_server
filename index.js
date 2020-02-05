@@ -110,11 +110,13 @@ server.on('connection', (socket) => {
         const parsedData = JSON.parse(data.toString());
         // check the token
         db.pipeline(database_connection, parsedData.token).then(() => {
+          const roomData = getRoomData(parsedData.roomNumber);
         switch (parsedData.event) {
+
           // if the incoming data is aiming to join a room
           case 'JOIN_ROOM':
             if (checkIfRoomAvailable(parsedData.roomNumber)) {
-              const roomData = getRoomData(parsedData.roomNumber);
+
 
                 createNewConnection({
                   socket,
@@ -151,11 +153,10 @@ server.on('connection', (socket) => {
               // now we can do stuff
               // first update the gamestate data
               console.log('received msg in send_click, starting process now..');
-              const roomData = getRoomData(parsedData.roomNumber);
               const newClickAmount = game.addClick(roomData);
               let { playerScore } = parsedData;
               let didClickWin = false;
-              console.log('old click score was: ' + roomData.clickAmount)
+              console.log('old click score was: ' + roomData.clickAmount);
 
               updateGameRoomClickAmount(newClickAmount, parsedData.roomNumber);
 
@@ -183,14 +184,23 @@ server.on('connection', (socket) => {
             }
             break;
 
+          case 'END_TURN':
+            const players = getRoomPlayerList(parsedData.roomNumber);
+                passTurnToNextClient(roomData);
+                  db.getRoomScores(database_connection, parsedData.roomNumber, players).then(((res) => {
+                    sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+                }));
+            break;
+
+
           case 'EXIT_ROOM':
-            removeClientFromRoom(socket);
+                handleClientDisconnect(socket);
+              //passTurnToNextClient(roomData);
             socket.end();
             break;
 
           case 'NEW_GAME':
             // what we need to do, is add starting points to client and send other players the new data
-            const roomData = getRoomData(parsedData.roomNumber);
                 db.updatePlayerScore(database_connection, parsedData.username, parsedData.roomNumber, startingScore).then(() => {
                   db.getRoomScores(database_connection, parsedData.roomNumber, getRoomPlayerList(parsedData.roomNumber)).then((res) => {
                     sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
@@ -225,7 +235,11 @@ server.on('connection', (socket) => {
 
   socket.on('close', (data) => {
     console.log('socket closed');
-    removeClientFromRoom(socket);
+    try{
+      if(isClientStillInRoom(socket))handleClientDisconnect(socket)
+    }catch (e) {
+      console.log(e)
+    }
   });
 });
 
@@ -283,12 +297,22 @@ const createNewConnection = (data) => {
 const getRoomData = (roomNumber) => rooms.filter((room) => room.roomNumber === roomNumber)[0];
 
 const addClientToRoom = (clientData) => {
-  getRoomData(clientData.roomNumber).clients.push(clientData);
+ getRoomData(clientData.roomNumber).clients.push(clientData);
 };
 
 const updateGameRoomClickAmount = (newAmount, roomNumber) => {
   getRoomData(roomNumber).clickAmount = newAmount;
 };
+
+const passTurnToNextClient = (roomData) => {
+  let next = roomData.turnHolder + 1;
+    console.log('client list containting one length= ' + roomData.clients.length);
+    for(let client in roomData.clients){
+      console.log(client.username)
+    }
+  (next > roomData.clients.length - 1) ? getRoomData(roomData.roomNumber).turnHolder = 0 : getRoomData(roomData.roomNumber).turnHolder = next;
+};
+
 
 const checkIfRoomAvailable = (roomNumber) => getRoomData(roomNumber).clients.length < maxClientsPerRoom;
 
@@ -298,6 +322,52 @@ const removeClientFromRoom = (client) => {
   rooms.forEach((room) => {
     room.clients = room.clients.filter((c) => c.socket !== client);
   });
+};
+
+const getRoomDataWithSocket = (client) => {
+  return rooms.filter((room) => {
+    let r = room.clients.filter((c) => {if (c.socket === client) return c})[0];
+    if(r !== undefined) return r
+  })[0]
+};
+
+const wasItClientsTurn = (client, roomData) => {
+  let turn = false;
+  let r = roomData.clients.filter((c) => {if(c.socket === client) return c})[0];
+  if(r !== undefined){
+    let players = getRoomPlayerList(r.roomNumber);
+       turn = players[roomData.turnHolder] === r.username
+    }
+
+  return turn;
+};
+
+const isClientStillInRoom = (client) => {
+  let room = getRoomDataWithSocket(client);
+  if(room === undefined) return false;
+  else{
+    return room.clients.filter((c) => {if(c.socket === client) return true})
+  }
+};
+
+const msgToDisconnectedClientsRoom = (roomData) => {
+  let players = getRoomPlayerList(roomData.roomNumber);
+  if(players.length > 0){
+    db.getRoomScores(database_connection, roomData.roomNumber, getRoomPlayerList(roomData.roomNumber)).then((res) => {
+      sendRoomScoresToClients(roomData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+    })
+  }
+};
+
+const handleClientDisconnect = (client) =>{
+  let roomData = getRoomDataWithSocket(client);
+  if(wasItClientsTurn(client, roomData)) {
+    removeClientFromRoom(client);
+    passTurnToNextClient(roomData);
+  }else{
+    removeClientFromRoom(client)
+  }
+  msgToDisconnectedClientsRoom(roomData)
 };
 
 // set up the game rooms
