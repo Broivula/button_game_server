@@ -64,7 +64,6 @@ const sendRoomScoresToClients = (roomNumber, gameScores, clickAmount, turnHolder
     players,
     didClickWin,
   };
-
   sendDataToRoomClients(clients, { statusCode: 200, msg: msgData });
 };
 
