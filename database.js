@@ -139,7 +139,7 @@ const checkIfUserHasScore = (conn, username, room) => executeQuery(conn,
   [room, username]);
 
 /**
- * GetRoomScore is a function, which returns the scores of given players in a given room.
+ * GetRoomScores is a function, which returns the scores of given players in a given room.
  *
  * @param {object} conn - The database connection.
  * @param {number} room - The number of the room the user occupies.
