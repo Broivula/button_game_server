@@ -20,14 +20,6 @@ const databaseConnection = db.connect();
 
 // routing for the express server, handling regular connections
 
-app.get('/', (req, res) => {
-  db.tokenCheckPipeline(databaseConnection, 'proof_of_concept_token_for_button_game', db.getRoomScores(databaseConnection, 1, game.getRoomPlayerList(1))).then(((result) => {
-    const parsed = JSON.parse(JSON.stringify(result));
-    console.log(parsed);
-  }
-  ));
-});
-
 app.get('/get/rooms_data', (req, res) => {
   const token = req.get('Authorization');
 
@@ -66,10 +58,6 @@ app.post('/post/newuser', (req, res) => {
   });
 });
 
-const error_msg = (res) => {
-  console.log('aaay, mistake bruh');
-  res.json({ err: 'token authentication failure' });
-};
 
 app.listen(3000);
 
@@ -96,47 +84,41 @@ server.on('connection', (socket) => {
                   roomNumber: parsedData.roomNumber,
                 });
                 db.checkIfUserHasScore(databaseConnection, parsedData.username, parsedData.roomNumber).then(((res) => {
-                  console.log('user score status: ');
                   const parsed = Object.values(res[0]);
-                  console.log(parsed[0]);
                   if (parsed[0] === 0) {
-                    console.log('new user, create a score for this room!');
                     db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, startingScore);
                   }
                   const players = game.getRoomPlayerList(parsedData.roomNumber);
                   db.getRoomScores(databaseConnection, parsedData.roomNumber, players).then(((result) => {
-                    sf.sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+                    sf.sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
                   }));
                 }));
               } else {
-                sf.socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL)
+                sf.socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL, null)
               }
               break;
 
             // if the incoming data is the data received from a click
             case 'SEND_CLICK':
               if (parsedData.playerScore > 0) {
-                console.log('received msg in send_click, starting process now..');
                 const newClickAmount = game.addClick(roomData);
                 let { playerScore } = parsedData;
                 let didClickWin = false;
-                console.log(`old click score was: ${roomData.clickAmount}`);
+                let amountWon = 0;
 
                 game.updateGameRoomClickAmount(newClickAmount, parsedData.roomNumber);
-
-                console.log(`roomClickAmount updated, new amount:${newClickAmount}`);
                 if (newClickAmount % 10 === 0) {
-                  playerScore += game.checkClick(newClickAmount);
+                  amountWon = game.checkClick(newClickAmount);
+                  playerScore += amountWon;
                   didClickWin = true;
                 } else {
                   playerScore--;
                 }
                 db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, playerScore)
                   .then(() => {
-                    console.log('updating the score was successful, now to get the scores..');
                     db.getRoomScores(databaseConnection, parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
                       .then(((res) => {
-                        sf.sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients);
+                        sf.sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients, amountWon);
                       }
                       ));
                   });
@@ -147,7 +129,7 @@ server.on('connection', (socket) => {
               const players = game.getRoomPlayerList(parsedData.roomNumber);
               game.passTurnToNextClient(roomData);
               db.getRoomScores(databaseConnection, parsedData.roomNumber, players).then(((res) => {
-                sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+                sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
               }));
               break;
 
@@ -160,7 +142,7 @@ server.on('connection', (socket) => {
             case 'NEW_GAME':
               db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, startingScore).then(() => {
                 db.getRoomScores(databaseConnection, parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber)).then((res) => {
-                  sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+                  sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
                 });
               });
               break;

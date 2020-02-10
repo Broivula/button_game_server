@@ -40,11 +40,11 @@ const sendDataToClient = (client, data) => {
  * SocketErrorMsg is a function, which reports error cases that client needs to be notified with.
  * For example, if the room is full -- or if the client was disconnected.
  *
- * @param {object} client - The object containing the client data -- socket information.
+ * @param {object} socket - Connected socket.
  * @param {ErrorMsgCodes} ErrorMsgCodes - The JS -styled enums containing error cases.
  * @param {string} err - Optional string containing the error msg.
  */
-const socketErrorMsg = (client, ErrorMsgCodes, err) => {
+const socketErrorMsg = (socket, ErrorMsgCodes, err) => {
 
   console.log('error code' + ErrorMsgCodes);
   const data = {
@@ -69,8 +69,10 @@ const socketErrorMsg = (client, ErrorMsgCodes, err) => {
       console.log(err);
       break;
   }
+  const client = {
+    socket
+  };
 
-  console.log(data);
   sendDataToClient(client,data)
 };
 
@@ -99,8 +101,9 @@ const sendDataToRoomClients = (clients, data) => {
  *                              game states clients array.
  * @param {boolean} didClickWin - Boolean containing information about did the incoming click win.
  * @param {Array} clients - An array containing the clients in the room.
+ * @param {number} amountWon - A numerical value representing the amount won, if won anything.
  */
-const sendRoomScoresToClients = (roomNumber, gameScores, clickAmount, turnHolder, didClickWin, clients) => {
+const sendRoomScoresToClients = (roomNumber, gameScores, clickAmount, turnHolder, didClickWin, clients, amountWon) => {
   const players = game.getRoomPlayerList(roomNumber);
   const scores = JSON.parse(JSON.stringify(gameScores));
   const msgData = {
@@ -110,6 +113,7 @@ const sendRoomScoresToClients = (roomNumber, gameScores, clickAmount, turnHolder
     scores,
     players,
     didClickWin,
+    amountWon
   };
   sendDataToRoomClients(clients, { statusCode: 200, msg: msgData });
 };
@@ -142,7 +146,7 @@ const msgToDisconnectedClientsRoom = (roomData, dbConn) => {
   const players = game.getRoomPlayerList(roomData.roomNumber);
   if (players.length > 0) {
     db.getRoomScores(dbConn, roomData.roomNumber, game.getRoomPlayerList(roomData.roomNumber)).then((res) => {
-      sendRoomScoresToClients(roomData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
+      sendRoomScoresToClients(roomData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
     });
   }
 };
@@ -162,7 +166,7 @@ const handleClientDisconnect = (client, dbConn) => {
     game.removeClientFromRoom(client);
     game.passTurnToNextClient(roomData);
   } else {
-    game.removeClientFromRoom(client, dbConn);
+    game.removeClientFromRoom(client);
   }
   msgToDisconnectedClientsRoom(roomData, dbConn);
 };

@@ -2,7 +2,7 @@
 require('net');
 
 const rooms = [];
-const maxClientsPerRoom = 1;
+const maxClientsPerRoom = 10;
 const maxRooms = 3;
 
 /**
