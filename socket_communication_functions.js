@@ -2,6 +2,14 @@
 const db = require('./database');
 const game = require('./game_file');
 
+const ErrorMsgCodes = {
+  "ROOM_FULL": "ROOM_FULL",
+  "DISCONNECT": "DISCONNECT",
+  "UNKNOWN": "UNKNOWN"
+};
+Object.freeze(ErrorMsgCodes);
+
+
 
 /**
  * ConstructMessage is a function, which builds the data to be sent via socket.
@@ -25,6 +33,45 @@ const constructMessage = (data) => {
  */
 const sendDataToClient = (client, data) => {
   client.socket.write(`${constructMessage(data)}\n`) ? console.log('data sent') : client.socket.pause();
+};
+
+
+/**
+ * SocketErrorMsg is a function, which reports error cases that client needs to be notified with.
+ * For example, if the room is full -- or if the client was disconnected.
+ *
+ * @param {object} client - The object containing the client data -- socket information.
+ * @param {ErrorMsgCodes} ErrorMsgCodes - The JS -styled enums containing error cases.
+ * @param {string} err - Optional string containing the error msg.
+ */
+const socketErrorMsg = (client, ErrorMsgCodes, err) => {
+
+  console.log('error code' + ErrorMsgCodes);
+  const data = {
+    statusCode: 500,
+  };
+  switch (ErrorMsgCodes) {
+    case "ROOM_FULL":
+        data.msg = {
+          errorMsg: "Room was full, try again later"
+        };
+          break;
+    case "DISCONNECT":
+      data.msg = {
+        errorMsg: "Disconnected from the server"
+      };
+          break;
+    case "UNKNOWN":
+      data.msg = {
+        errorMsg: "Unknown error"
+      };
+      console.log('unkown cause of error, errormsg: ');
+      console.log(err);
+      break;
+  }
+
+  console.log(data);
+  sendDataToClient(client,data)
 };
 
 /**
@@ -126,4 +173,6 @@ module.exports = {
   sendRoomScoresToClients,
   sendDataToClient,
   handleClientDisconnect,
+  socketErrorMsg,
+  ErrorMsgCodes
 };

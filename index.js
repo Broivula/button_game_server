@@ -85,11 +85,9 @@ server.on('connection', (socket) => {
       try {
         console.log('data incoming:');
         const parsedData = JSON.parse(data.toString());
-        // check the token
         db.tokenCheckPipeline(databaseConnection, parsedData.token).then(() => {
           const roomData = game.getRoomData(parsedData.roomNumber);
           switch (parsedData.event) {
-          // if the incoming data is aiming to join a room
             case 'JOIN_ROOM':
               if (game.checkIfRoomAvailable(parsedData.roomNumber)) {
                 sf.createNewConnection({
@@ -97,14 +95,10 @@ server.on('connection', (socket) => {
                   username: parsedData.username,
                   roomNumber: parsedData.roomNumber,
                 });
-
-                // connection created, player has joined the room. now, send the room scores and relevant data to them.
-                // first, check if player has a current score in the room --if not, add them there
                 db.checkIfUserHasScore(databaseConnection, parsedData.username, parsedData.roomNumber).then(((res) => {
                   console.log('user score status: ');
                   const parsed = Object.values(res[0]);
                   console.log(parsed[0]);
-                  // no score was found, add starting score in the table
                   if (parsed[0] === 0) {
                     console.log('new user, create a score for this room!');
                     db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, startingScore);
@@ -115,16 +109,13 @@ server.on('connection', (socket) => {
                   }));
                 }));
               } else {
-              // room was full, respond with appropriate message
-                sf.sendDataToClient(socket, { statusCode: 400, msg: 'room full bruh' });
+                sf.socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL)
               }
               break;
 
             // if the incoming data is the data received from a click
             case 'SEND_CLICK':
               if (parsedData.playerScore > 0) {
-              // now we can do stuff
-              // first update the gamestate data
                 console.log('received msg in send_click, starting process now..');
                 const newClickAmount = game.addClick(roomData);
                 let { playerScore } = parsedData;
@@ -134,19 +125,15 @@ server.on('connection', (socket) => {
                 game.updateGameRoomClickAmount(newClickAmount, parsedData.roomNumber);
 
                 console.log(`roomClickAmount updated, new amount:${newClickAmount}`);
-                // check if new clickamount wins anything
                 if (newClickAmount % 10 === 0) {
                   playerScore += game.checkClick(newClickAmount);
                   didClickWin = true;
                 } else {
                   playerScore--;
                 }
-                // update the database
                 db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, playerScore)
                   .then(() => {
-                    // player score updated, send the new scores to all clients
-                    // ..so first get the new scores
-                    console.log('updating the score was succesfull, now to get the scores..');
+                    console.log('updating the score was successful, now to get the scores..');
                     db.getRoomScores(databaseConnection, parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
                       .then(((res) => {
                         sf.sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients);
@@ -166,13 +153,11 @@ server.on('connection', (socket) => {
 
 
             case 'EXIT_ROOM':
-              sf.handleClientDisconnect(socket);
-              // passTurnToNextClient(roomData);
+              sf.handleClientDisconnect(socket, databaseConnection);
               socket.end();
               break;
 
             case 'NEW_GAME':
-            // what we need to do, is add starting points to client and send other players the new data
               db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, startingScore).then(() => {
                 db.getRoomScores(databaseConnection, parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber)).then((res) => {
                   sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients);
@@ -180,9 +165,7 @@ server.on('connection', (socket) => {
               });
               break;
             default:
-            // default case
-            // just log something, I guess
-              console.log('user msg hit the default case -> no event defined');
+              sf.socketErrorMsg(socket, sf.ErrorMsgCodes.UNKNOWN, "hit the default case, which should be impossible");
               break;
           }
         }).catch((err) => {
@@ -209,7 +192,7 @@ server.on('connection', (socket) => {
   socket.on('close', () => {
     console.log('socket closed');
     try {
-      if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
+      if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket, databaseConnection);
     } catch (e) {
       console.log(e);
     }
