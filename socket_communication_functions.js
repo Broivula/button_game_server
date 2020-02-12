@@ -3,12 +3,11 @@ const db = require('./database');
 const game = require('./game_file');
 
 const ErrorMsgCodes = {
-  "ROOM_FULL": "ROOM_FULL",
-  "DISCONNECT": "DISCONNECT",
-  "UNKNOWN": "UNKNOWN"
+  ROOM_FULL: 'ROOM_FULL',
+  DISCONNECT: 'DISCONNECT',
+  UNKNOWN: 'UNKNOWN',
 };
 Object.freeze(ErrorMsgCodes);
-
 
 
 /**
@@ -45,35 +44,34 @@ const sendDataToClient = (client, data) => {
  * @param {string} err - Optional string containing the error msg.
  */
 const socketErrorMsg = (socket, ErrorMsgCodes, err) => {
-
-  console.log('error code' + ErrorMsgCodes);
+  console.log(`error code${ErrorMsgCodes}`);
   const data = {
     statusCode: 500,
   };
   switch (ErrorMsgCodes) {
-    case "ROOM_FULL":
-        data.msg = {
-          errorMsg: "Room was full, try again later"
-        };
-          break;
-    case "DISCONNECT":
+    case 'ROOM_FULL':
       data.msg = {
-        errorMsg: "Disconnected from the server"
+        errorMsg: 'Room was full, try again later',
       };
-          break;
-    case "UNKNOWN":
+      break;
+    case 'DISCONNECT':
       data.msg = {
-        errorMsg: "Unknown error"
+        errorMsg: 'Disconnected from the server',
+      };
+      break;
+    case 'UNKNOWN':
+      data.msg = {
+        errorMsg: 'Unknown error',
       };
       console.log('unkown cause of error, errormsg: ');
       console.log(err);
       break;
   }
   const client = {
-    socket
+    socket,
   };
 
-  sendDataToClient(client,data)
+  sendDataToClient(client, data);
 };
 
 /**
@@ -113,7 +111,7 @@ const sendRoomScoresToClients = (roomNumber, gameScores, clickAmount, turnHolder
     scores,
     players,
     didClickWin,
-    amountWon
+    amountWon,
   };
   sendDataToRoomClients(clients, { statusCode: 200, msg: msgData });
 };
@@ -160,16 +158,6 @@ const msgToDisconnectedClientsRoom = (roomData) => {
  */
 const handleClientDisconnect = (client) => {
   const roomData = game.getRoomDataWithSocket(client);
-  /*
-  if (game.wasItClientsTurn(client, roomData)) {
-    console.log(client._sockname);
-    game.removeClientFromRoom(client);
-    game.passTurnToNextClient(roomData);
-  } else {
-    game.removeClientFromRoom(client);
-  }
-
-   */
   game.removeClientFromRoom(client);
   game.syncTurnHolderToPlayerAmount(roomData);
   client.end();
@@ -183,5 +171,5 @@ module.exports = {
   sendDataToClient,
   handleClientDisconnect,
   socketErrorMsg,
-  ErrorMsgCodes
+  ErrorMsgCodes,
 };

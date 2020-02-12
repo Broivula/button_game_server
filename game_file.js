@@ -1,4 +1,4 @@
-
+/* eslint-disable max-len */
 require('net');
 
 const rooms = [];
@@ -112,11 +112,7 @@ const updateGameRoomClickAmount = (newAmount, roomNumber) => {
  * @param {object} client - Client being checked.
  * @returns {number} The index number of the client.
  */
-const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.map((c) =>
-{
-  console.log('client is ' + client._sockname);
-console.log('and c id is: ' + c.username);
-  return c.username}).indexOf(client._sockname);
+const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.map((c) => c.username).indexOf(client._sockname);
 
 /**
  * RemoveClientFromRoom is a function, which removes given client from their room.
@@ -129,8 +125,8 @@ const removeClientFromRoom = (client) => {
 
 
 const syncTurnHolderToPlayerAmount = (roomData) => {
-  if((roomData.clients.length - 1) < roomData.turnHolder && roomData.clients.length > 0) {
-    roomData.turnHolder = roomData.clients.length -1
+  if ((roomData.clients.length - 1) < roomData.turnHolder && roomData.clients.length > 0) {
+    roomData.turnHolder = roomData.clients.length - 1;
   }
 };
 
@@ -162,8 +158,8 @@ const passTurnToNextClient = (roomData) => {
  * WasItClientsTurn is a function, which checks if it currently is given clients turn.
  * Used when client unexpectedly disconnects and server needs to know wheter it was that clients turn or not.
  *
- * @param {object} roomData - The data of the room being checked.
  * @param {object} client - The socket data of the disconnected client.
+ * @param {object} roomData - The data of the room being checked.
  * @returns {boolean} The boolean state of whether it was clients turn or not.
  */
 const wasItClientsTurn = (client, roomData) => {
@@ -180,6 +176,7 @@ const wasItClientsTurn = (client, roomData) => {
  * AddClick is a function, which increments the given rooms click count.
  *
  * @param {object} roomData - The data of the room being modified.
+ * @returns {number} - Returns the new click amount for the room.
  */
 const addClick = (roomData) => roomData.clickAmount + 1;
 
@@ -214,5 +211,5 @@ module.exports = {
   getAllRoomsData,
   instantiateGameRooms,
   getGameRoomsData,
-  syncTurnHolderToPlayerAmount
+  syncTurnHolderToPlayerAmount,
 };

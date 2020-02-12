@@ -59,7 +59,7 @@ app.listen(3003);
 
 // configuration for the socket connections
 
-const server = net.createServer({allowHalfOpen : true});
+const server = net.createServer({ allowHalfOpen: true });
 
 server.on('connection', (socket) => {
   socket.setEncoding('utf-8');
@@ -90,7 +90,7 @@ server.on('connection', (socket) => {
                   }));
                 }));
               } else {
-                sf.socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL, null)
+                sf.socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL, null);
               }
               break;
 
@@ -132,7 +132,7 @@ server.on('connection', (socket) => {
 
             case 'EXIT_ROOM':
               sf.handleClientDisconnect(socket);
-              //socket.end();
+              // socket.end();
               break;
 
             case 'NEW_GAME':
@@ -143,7 +143,7 @@ server.on('connection', (socket) => {
               });
               break;
             default:
-              sf.socketErrorMsg(socket, sf.ErrorMsgCodes.UNKNOWN, "hit the default case, which should be impossible");
+              sf.socketErrorMsg(socket, sf.ErrorMsgCodes.UNKNOWN, 'hit the default case, which should be impossible');
               break;
           }
         }).catch((err) => {
@@ -164,8 +164,6 @@ server.on('connection', (socket) => {
 
   socket.on('end', (data) => {
     try {
-      console.log('socket end data:');
-      console.log(data);
       if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
     } catch (e) {
       console.log(e);

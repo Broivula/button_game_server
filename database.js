@@ -34,18 +34,18 @@ const errorHandler = (err) => {
 const executeQuery = (query, params) => new Promise((resolve, reject) => {
   try {
     connect().getConnection((err, connection) => {
-      if(err){
+      if (err) {
         console.log('error getting connection. error msg: ');
         console.log(err);
-        return
+        return;
       }
       connection.query(query, params, (err, result) => {
         connection.release();
         if (err) reject(err);
         resolve(result);
       });
-    })
-    }catch (err) { errorHandler(err); }
+    });
+  } catch (err) { errorHandler(err); }
 }).catch((err) => {
   errorHandler(err);
 });
@@ -93,7 +93,8 @@ const addUser = (username) => {
   return new Promise((resolve, reject) => {
     executeQuery(
       'INSERT INTO user_info (UID, username) VALUES (?, ?);',
-      [uid, username]).then(() => {
+      [uid, username],
+    ).then(() => {
       // user with uid generated, now return the new uid
       resolve(uid);
     });
@@ -114,7 +115,8 @@ const addUser = (username) => {
 
 const updatePlayerScore = (username, room, score) => executeQuery(
   'INSERT INTO game_scores_table (score, username, room) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE score=?;',
-  [score, username, room, score]);
+  [score, username, room, score],
+);
 
 
 /**
@@ -125,7 +127,8 @@ const updatePlayerScore = (username, room, score) => executeQuery(
  */
 const checkIfUserExists = (username) => executeQuery(
   'SELECT EXISTS(SELECT * FROM user_info WHERE username=?);',
-  [username]);
+  [username],
+);
 
 /**
  * CheckIfUserHasScore is a function, which checks if the user has a score in the given room.
@@ -137,7 +140,8 @@ const checkIfUserExists = (username) => executeQuery(
 
 const checkIfUserHasScore = (username, room) => executeQuery(
   'SELECT EXISTS (SELECT * FROM game_scores_table WHERE room=? AND username=?);',
-  [room, username]);
+  [room, username],
+);
 
 /**
  * GetRoomScores is a function, which returns the scores of given players in a given room.
@@ -149,7 +153,8 @@ const checkIfUserHasScore = (username, room) => executeQuery(
 
 const getRoomScores = (room, players) => executeQuery(
   'SELECT username, score FROM game_scores_table WHERE room=? AND username IN (?);',
-  [room, players]);
+  [room, players],
+);
 
 
 module.exports = {
