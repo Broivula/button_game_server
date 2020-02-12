@@ -67,6 +67,8 @@ server.on('connection', (socket) => {
   socket.on('data', (data) => {
     if (data.length > 5) {
       try {
+        console.log(socket);
+        console.log('socket id : ' + socket.id);
         const parsedData = JSON.parse(data.toString());
         db.tokenCheckPipeline(parsedData.token).then(() => {
           const roomData = game.getRoomData(parsedData.roomNumber);
