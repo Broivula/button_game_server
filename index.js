@@ -59,7 +59,7 @@ app.listen(3003);
 
 // configuration for the socket connections
 
-const server = net.createServer();
+const server = net.createServer({allowHalfOpen : true});
 
 server.on('connection', (socket) => {
   socket.setEncoding('utf-8');
