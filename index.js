@@ -164,6 +164,8 @@ server.on('connection', (socket) => {
 
   socket.on('end', (data) => {
     try {
+      const parsedData = JSON.parse(data.toString());
+      socket._sockname = parsedData.username;
       if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
     } catch (e) {
       console.log(e);
