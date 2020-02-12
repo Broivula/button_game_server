@@ -162,7 +162,11 @@ server.on('connection', (socket) => {
   });
 
   socket.on('end', (data) => {
-    console.log('socket end called, was it before anything else? data: ');
+    try {
+      if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
+    } catch (e) {
+      console.log(e);
+    }
     console.log(data);
   });
 
