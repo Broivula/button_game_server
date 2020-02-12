@@ -113,9 +113,9 @@ const updateGameRoomClickAmount = (newAmount, roomNumber) => {
  * @returns {number} The index number of the client.
  */
 const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.map((c) =>
-{ console.log(client.localAddress);
+{
   console.log('client is ' + client._sockname);
-console.log('and c id is: ' + c.socket.localAddress);
+console.log('and c id is: ' + c.username);
   return c.username}).indexOf(client._sockname);
 
 /**
