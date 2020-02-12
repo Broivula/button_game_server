@@ -139,13 +139,11 @@ const createNewConnection = (data) => {
  * If there are still players in the room, the current room scores are fetched and returned to other clients.
  *
  * @param {object} roomData - The data of the room the client disconnected from.
- * @param {object} dbConn - The object containing the database connection information. Used to receive the latest
- *                          room score data.
  */
-const msgToDisconnectedClientsRoom = (roomData, dbConn) => {
+const msgToDisconnectedClientsRoom = (roomData) => {
   const players = game.getRoomPlayerList(roomData.roomNumber);
   if (players.length > 0) {
-    db.getRoomScores(dbConn, roomData.roomNumber, game.getRoomPlayerList(roomData.roomNumber)).then((res) => {
+    db.getRoomScores(roomData.roomNumber, game.getRoomPlayerList(roomData.roomNumber)).then((res) => {
       sendRoomScoresToClients(roomData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
     });
   }
@@ -157,10 +155,8 @@ const msgToDisconnectedClientsRoom = (roomData, dbConn) => {
  * If not, just remove the client from the room. Then inform rest of the clients in the room of the disconnect.
  *
  * @param {object} client - The client disconnected from the room.
- * @param {object} dbConn - The object containing the database connection information. Used to receive the latest
- *                          room score data.
  */
-const handleClientDisconnect = (client, dbConn) => {
+const handleClientDisconnect = (client) => {
   const roomData = game.getRoomDataWithSocket(client);
   if (game.wasItClientsTurn(client, roomData)) {
     game.removeClientFromRoom(client);
@@ -168,7 +164,7 @@ const handleClientDisconnect = (client, dbConn) => {
   } else {
     game.removeClientFromRoom(client);
   }
-  msgToDisconnectedClientsRoom(roomData, dbConn);
+  msgToDisconnectedClientsRoom(roomData);
 };
 
 

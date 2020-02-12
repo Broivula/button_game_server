@@ -14,16 +14,12 @@ const startingScore = 20;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// setting up database connection
-
-const databaseConnection = db.connect();
-
 // routing for the express server, handling regular connections
 
 app.get('/get/rooms_data', (req, res) => {
   const token = req.get('Authorization');
 
-  db.tokenCheckPipeline(databaseConnection, token).then(((result) => {
+  db.tokenCheckPipeline(token).then(((result) => {
     if (result) {
       res.json(game.getGameRoomsData());
     } else {
@@ -35,7 +31,7 @@ app.get('/get/rooms_data', (req, res) => {
 app.post('/post/check_user_availability', (req, res) => {
   const token = req.get('Authorization');
   const { username } = req.body;
-  db.tokenCheckPipeline(databaseConnection, token, db.checkIfUserExists(databaseConnection, username)).then((result) => {
+  db.tokenCheckPipeline(token, db.checkIfUserExists(username)).then((result) => {
     const parsed = Object.values(result[0]);
     let available;
     (parsed === 1) ? available = false : available = true;
@@ -49,7 +45,7 @@ app.post('/post/newuser', (req, res) => {
   // username hard coded now for testing purposes
   const token = req.get('Authorization');
   const { username } = req.body;
-  db.tokenCheckPipeline(databaseConnection, token, db.addUser(databaseConnection, username)).then((result) => {
+  db.tokenCheckPipeline(token, db.addUser(username)).then((result) => {
     res.json({ uid: result });
   }).catch((err) => {
     console.log('error adding a new user');
@@ -72,7 +68,7 @@ server.on('connection', (socket) => {
     if (data.length > 5) {
       try {
         const parsedData = JSON.parse(data.toString());
-        db.tokenCheckPipeline(databaseConnection, parsedData.token).then(() => {
+        db.tokenCheckPipeline(parsedData.token).then(() => {
           const roomData = game.getRoomData(parsedData.roomNumber);
           switch (parsedData.event) {
             case 'JOIN_ROOM':
@@ -82,13 +78,13 @@ server.on('connection', (socket) => {
                   username: parsedData.username,
                   roomNumber: parsedData.roomNumber,
                 });
-                db.checkIfUserHasScore(databaseConnection, parsedData.username, parsedData.roomNumber).then(((res) => {
+                db.checkIfUserHasScore(parsedData.username, parsedData.roomNumber).then(((res) => {
                   const parsed = Object.values(res[0]);
                   if (parsed[0] === 0) {
-                    db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, startingScore);
+                    db.updatePlayerScore(parsedData.username, parsedData.roomNumber, startingScore);
                   }
                   const players = game.getRoomPlayerList(parsedData.roomNumber);
-                  db.getRoomScores(databaseConnection, parsedData.roomNumber, players).then(((result) => {
+                  db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
                     sf.sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
                   }));
                 }));
@@ -113,9 +109,9 @@ server.on('connection', (socket) => {
                 } else {
                   playerScore--;
                 }
-                db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, playerScore)
+                db.updatePlayerScore(parsedData.username, parsedData.roomNumber, playerScore)
                   .then(() => {
-                    db.getRoomScores(databaseConnection, parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
+                    db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
                       .then(((res) => {
                         sf.sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients, amountWon);
                       }
@@ -127,20 +123,20 @@ server.on('connection', (socket) => {
             case 'END_TURN':
               const players = game.getRoomPlayerList(parsedData.roomNumber);
               game.passTurnToNextClient(roomData);
-              db.getRoomScores(databaseConnection, parsedData.roomNumber, players).then(((res) => {
+              db.getRoomScores(parsedData.roomNumber, players).then(((res) => {
                 sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
               }));
               break;
 
 
             case 'EXIT_ROOM':
-              sf.handleClientDisconnect(socket, databaseConnection);
+              sf.handleClientDisconnect(socket);
               socket.end();
               break;
 
             case 'NEW_GAME':
-              db.updatePlayerScore(databaseConnection, parsedData.username, parsedData.roomNumber, startingScore).then(() => {
-                db.getRoomScores(databaseConnection, parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber)).then((res) => {
+              db.updatePlayerScore(parsedData.username, parsedData.roomNumber, startingScore).then(() => {
+                db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber)).then((res) => {
                   sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
                 });
               });
@@ -173,19 +169,12 @@ server.on('connection', (socket) => {
   socket.on('close', () => {
     console.log('socket closed');
     try {
-      if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket, databaseConnection);
+      if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
     } catch (e) {
       console.log(e);
     }
   });
 });
-
-setInterval(() =>{
-  db.getRoomScores(databaseConnection, 1, []).then((result) => {
-    console.log('keeping up connection..');
-    console.log(result);
-  })
-}, 100000);
 
 
 server.listen(3366, () => {
