@@ -123,6 +123,13 @@ const removeClientFromRoom = (client) => {
   getRoomDataWithSocket(client).clients.splice(indexOfClientInRoom(client), 1);
 };
 
+
+const syncTurnHolderToPlayerAmount = (roomData) => {
+  if((roomData.clients.length - 1) < roomData.turnHolder) {
+    roomData.turnHolder = roomData.clients.length - 1
+  }
+};
+
 /**
  * IsClientStillInRoom is a function, which checks if the given client is still occupying
  * their room. Is called when the servers on socket 'disconnect' -event is called.
@@ -203,4 +210,5 @@ module.exports = {
   getAllRoomsData,
   instantiateGameRooms,
   getGameRoomsData,
+  syncTurnHolderToPlayerAmount
 };

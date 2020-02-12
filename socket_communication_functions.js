@@ -164,6 +164,7 @@ const handleClientDisconnect = (client) => {
   } else {
     game.removeClientFromRoom(client);
   }
+  game.syncTurnHolderToPlayerAmount(roomData);
   msgToDisconnectedClientsRoom(roomData);
 };
 
