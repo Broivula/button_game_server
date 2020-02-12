@@ -59,7 +59,7 @@ app.post('/post/newuser', (req, res) => {
 });
 
 
-app.listen(3000);
+app.listen(3003);
 
 // configuration for the socket connections
 
