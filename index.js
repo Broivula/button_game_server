@@ -131,7 +131,7 @@ server.on('connection', (socket) => {
 
             case 'EXIT_ROOM':
               sf.handleClientDisconnect(socket);
-              socket.end();
+              //socket.end();
               break;
 
             case 'NEW_GAME':
@@ -172,15 +172,12 @@ server.on('connection', (socket) => {
 
   socket.on('error', (err) => {
     console.log('something went wrong..');
-    console.log(err);
-    /*
     try {
       if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
     } catch (e) {
       console.log(e);
     }
     console.log(err);
-    */
   });
 
   socket.on('close', () => {
