@@ -172,17 +172,16 @@ server.on('connection', (socket) => {
 
   socket.on('error', (err) => {
     console.log('something went wrong..');
-    console.log(err);
-  });
-
-  socket.on('close', () => {
-    console.log('socket closed');
     try {
       if (game.isClientStillInRoom(socket))sf.handleClientDisconnect(socket);
     } catch (e) {
       console.log(e);
     }
+    console.log(err);
   });
+
+  socket.on('close', () => {
+    console.log('socket closed');
 });
 
 
