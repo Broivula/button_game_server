@@ -161,7 +161,7 @@ const msgToDisconnectedClientsRoom = (roomData) => {
 const handleClientDisconnect = (client) => {
   const roomData = game.getRoomDataWithSocket(client);
   if (game.wasItClientsTurn(client, roomData)) {
-    console.log(client);
+    console.log(client._sockname);
     game.removeClientFromRoom(client);
     game.passTurnToNextClient(roomData);
   } else {

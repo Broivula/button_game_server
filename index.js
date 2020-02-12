@@ -73,6 +73,7 @@ server.on('connection', (socket) => {
           switch (parsedData.event) {
             case 'JOIN_ROOM':
               if (game.checkIfRoomAvailable(parsedData.roomNumber)) {
+                socket._sockname = parsedData.username;
                 sf.createNewConnection({
                   socket,
                   username: parsedData.username,
