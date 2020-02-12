@@ -121,7 +121,7 @@ const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.in
  */
 const removeClientFromRoom = (client) => {
   getRoomDataWithSocket(client).clients.filter((c) => {
-    return c.username !== client._sockname;
+    return c.username === client._sockname;
   });
 };
 
