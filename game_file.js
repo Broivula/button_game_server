@@ -120,7 +120,7 @@ const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.in
  * @param {object} client - Client being removed.
  */
 const removeClientFromRoom = (client) => {
-  getRoomDataWithSocket(client).clients.splice(indexOfClientInRoom(client) - 1, 1);
+  getRoomDataWithSocket(client).clients.splice(indexOfClientInRoom(client), 1);
 };
 
 
