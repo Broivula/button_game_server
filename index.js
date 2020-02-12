@@ -181,6 +181,13 @@ server.on('connection', (socket) => {
   });
 });
 
+setInterval(() =>{
+  db.getRoomScores(databaseConnection, 1, []).then((result) => {
+    console.log('keeping up connection..');
+    console.log(result);
+  })
+}, 100000);
+
 
 server.listen(3366, () => {
   console.log('server started, listening to port 3366');
