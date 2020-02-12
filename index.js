@@ -69,11 +69,11 @@ server.on('connection', (socket) => {
       try {
         const parsedData = JSON.parse(data.toString());
         db.tokenCheckPipeline(parsedData.token).then(() => {
+          socket._sockname = parsedData.username;
           const roomData = game.getRoomData(parsedData.roomNumber);
           switch (parsedData.event) {
             case 'JOIN_ROOM':
               if (game.checkIfRoomAvailable(parsedData.roomNumber)) {
-                socket._sockname = parsedData.username;
                 sf.createNewConnection({
                   socket,
                   username: parsedData.username,
