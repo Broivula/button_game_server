@@ -140,8 +140,6 @@ const createNewConnection = (data) => {
  */
 const msgToDisconnectedClientsRoom = (roomData) => {
   const players = game.getRoomPlayerList(roomData.roomNumber);
-  console.log('players of the disconnect room: ');
-  console.log(players);
   if (players.length > 0) {
     db.getRoomScores(roomData.roomNumber, game.getRoomPlayerList(roomData.roomNumber)).then((res) => {
       sendRoomScoresToClients(roomData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);

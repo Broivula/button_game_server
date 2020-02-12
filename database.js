@@ -90,6 +90,7 @@ const tokenCheckPipeline = ((token, func) => new Promise((resolve, reject) => {
  */
 const addUser = (username) => {
   const uid = uuidv4();
+  console.log('adding new user by the username of: ' + username);
   return new Promise((resolve, reject) => {
     executeQuery(
       'INSERT INTO user_info (UID, username) VALUES (?, ?);',
