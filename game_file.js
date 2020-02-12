@@ -112,7 +112,7 @@ const updateGameRoomClickAmount = (newAmount, roomNumber) => {
  * @param {object} client - Client being checked.
  * @returns {number} The index number of the client.
  */
-const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.indexOf(client);
+const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.map((c) => {return c.username}).indexOf(client._sockname);
 
 /**
  * RemoveClientFromRoom is a function, which removes given client from their room.
@@ -120,9 +120,7 @@ const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.in
  * @param {object} client - Client being removed.
  */
 const removeClientFromRoom = (client) => {
-  getRoomDataWithSocket(client).clients.filter((c) => {
-    return c.username === client._sockname;
-  });
+  getRoomDataWithSocket(client).clients.splice(indexOfClientInRoom(client), 1);
 };
 
 
