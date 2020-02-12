@@ -125,8 +125,8 @@ const removeClientFromRoom = (client) => {
 
 
 const syncTurnHolderToPlayerAmount = (roomData) => {
-  if((roomData.clients.length - 1) < roomData.turnHolder) {
-    roomData.turnHolder = roomData.clients.length - 1
+  if((roomData.clients.length - 1) < roomData.turnHolder && roomData.clients.length > 0) {
+    roomData.turnHolder = roomData.clients.length -1
   }
 };
 
