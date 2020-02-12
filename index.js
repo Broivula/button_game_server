@@ -161,6 +161,11 @@ server.on('connection', (socket) => {
     socket.resume();
   });
 
+  socket.on('end', (data) => {
+    console.log('socket end called, was it before anything else? data: ');
+    console.log(data);
+  });
+
   socket.on('error', (err) => {
     console.log('something went wrong..');
     console.log(err);
