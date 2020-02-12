@@ -120,7 +120,11 @@ const indexOfClientInRoom = (client) => getRoomDataWithSocket(client).clients.in
  * @param {object} client - Client being removed.
  */
 const removeClientFromRoom = (client) => {
-  getRoomDataWithSocket(client).clients.filter((c) => c._sockname !== client._sockname);
+  getRoomDataWithSocket(client).clients.filter((c) => {
+    console.log('removing: ' + client._sockname);
+    console.log('handling: ' + c._sockname);
+    c._sockname === client._sockname;
+  })
 };
 
 
