@@ -9,7 +9,7 @@ const uuidv4 = require('uuid/v4');
  * @returns {object} The database connection is returned as an object.
  */
 
-const connect = () => mysql.createConnection({
+const connect = () => mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   database: process.env.DB,
@@ -34,11 +34,19 @@ const errorHandler = (err) => {
 
 const executeQuery = (conn, query, params) => new Promise((resolve, reject) => {
   try {
-    conn.query(query, params, (err, result) => {
-      if (err) reject(err);
-      resolve(result);
-    });
-  } catch (err) { errorHandler(err); }
+    connect().getConnection((err, connection) => {
+      if(err){
+        console.log('error getting connection. error msg: ');
+        console.log(err);
+        return
+      }
+      console.log('connection established successfully');
+      connection.query(query, params, (err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    })
+    }catch (err) { errorHandler(err); }
 }).catch((err) => {
   errorHandler(err);
 });
