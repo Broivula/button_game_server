@@ -35,7 +35,7 @@ app.post('/post/check_user_availability', (req, res) => {
     const parsed = Object.values(result[0]);
     console.log('username: ' + username + ' is available: ' + parsed);
     let available;
-    (parsed === 1) ? available = false : available = true;
+    (parseInt(parsed.toString()) === 1) ? available = false : available = true;
     res.json({ username_available: available });
   }).catch(() => {
     res.json({ error_msg: 'error ing username availability' });
