@@ -29,9 +29,9 @@ const errorHandler = (err) => {
  * @returns {Promise} The result of the query is returned.
  */
 
-const executeQuery =  (query, params) => new Promise ( (resolve, reject) => async () =>{
+const executeQuery =  (query, params) => new Promise ( (resolve, reject) => {
   try {
-      await pool.getConnection((err, connection) => {
+    pool.getConnection((err, connection) => {
       if (err) {
         console.log('error getting connection. error msg: ');
         console.log(err);
