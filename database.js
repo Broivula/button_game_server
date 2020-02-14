@@ -3,19 +3,25 @@ require('dotenv').config();
 const mysql = require('mysql');
 const uuidv4 = require('uuid/v4');
 
-/**
- * Connect is a function, which establishes the database connection.
- *
- * @returns {object} The database connection is returned as an object.
- */
 
-const connect = () => mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  database: process.env.DB,
-  password: process.env.DB_PASS,
-  connectionLimit: 10
-});
+const createConnectionPool = () => {
+
+  const pool =  mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    database: process.env.DB,
+    password: process.env.DB_PASS,
+    connectionLimit: 10,
+    waitForConnections: true,
+    queueLimit: 0
+  });
+
+
+  return  pool.promise();
+
+};
+
+const pool = createConnectionPool();
 
 
 const errorHandler = (err) => {
@@ -32,9 +38,9 @@ const errorHandler = (err) => {
  * @returns {Promise} The result of the query is returned.
  */
 
-const executeQuery = (query, params) => new Promise((resolve, reject) => {
+const executeQuery =  (query, params) => new Promise ( (resolve, reject) => async () =>{
   try {
-    connect().getConnection((err, connection) => {
+      await pool().getConnection((err, connection) => {
       if (err) {
         console.log('error getting connection. error msg: ');
         console.log(err);
@@ -67,7 +73,7 @@ const executeQuery = (query, params) => new Promise((resolve, reject) => {
 
 const tokenCheckPipeline = ((token, func) => new Promise((resolve, reject) => {
   try {
-    executeQuery(
+     executeQuery(
       'SELECT * FROM token_table',
       [],
     ).then((result) => {
@@ -96,7 +102,7 @@ const addUser = (username) => {
   const uid = uuidv4();
   console.log('adding new user by the username of: ' + username);
   return new Promise((resolve, reject) => {
-    executeQuery(
+     executeQuery (
       'INSERT INTO user_info (UID, username) VALUES (?, ?);',
       [uid, username],
     ).then(() => {
@@ -143,7 +149,7 @@ const checkIfUserExists = (username) => executeQuery(
  * @returns {Promise} Returns the result of the query.
  */
 
-const checkIfUserHasScore = (username, room) => executeQuery(
+const checkIfUserHasScore = (username, room) =>  executeQuery(
   'SELECT EXISTS (SELECT * FROM game_scores_table WHERE room=? AND username=?);',
   [room, username],
 );
