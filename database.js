@@ -44,6 +44,7 @@ const executeQuery = (query, params) => new Promise((resolve, reject) => {
         console.log(connection);
         connection.release();
         console.log('connection state? : ' + connection.state);
+        console.log('connection still in pool? ' + connection._pool._freeConnections.indexOf(connection));
         if (err) reject(err);
         resolve(result);
       });
