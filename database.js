@@ -42,6 +42,7 @@ const executeQuery = (query, params) => new Promise((resolve, reject) => {
       }
       connection.query(query, params, (err, result) => {
         connection.release();
+        console.log('connection released? : ' + connect._freeConnections.indexOf(connection));
         if (err) reject(err);
         resolve(result);
       });

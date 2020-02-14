@@ -43,7 +43,6 @@ app.post('/post/check_user_availability', (req, res) => {
 });
 
 app.post('/post/newuser', (req, res) => {
-  // username hard coded now for testing purposes
   const token = req.get('Authorization');
   const { username } = req.body;
   db.tokenCheckPipeline(token, db.addUser(username)).then((result) => {
