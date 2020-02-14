@@ -4,6 +4,10 @@ const mysql = require('mysql');
 const uuidv4 = require('uuid/v4');
 
 
+/**
+ * Pool creates a pool of connections to be used in database queries.
+ */
+
 const pool =  mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -14,6 +18,11 @@ const pool =  mysql.createPool({
   queueLimit: 0
 });
 
+/**
+ * ErrorHandler logs the errors in database queries.
+ *
+ * @param err {string} - The error message.
+ */
 
 const errorHandler = (err) => {
   console.log('error in the pipeline: ');
@@ -38,10 +47,7 @@ const executeQuery =  (query, params) => new Promise ( (resolve, reject) => {
         return;
       }
       connection.query(query, params, (err, result) => {
-        console.log(connection);
         connection.release();
-        console.log('connection state? : ' + connection.state);
-        console.log('connection still in pool? ' + connection._pool._freeConnections.indexOf(connection));
         if (err) reject(err);
         resolve(result);
       });
