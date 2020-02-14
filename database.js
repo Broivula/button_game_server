@@ -40,6 +40,8 @@ const executeQuery = (query, params) => new Promise((resolve, reject) => {
         console.log(err);
         return;
       }
+      console.log(connection);
+      console.log(err);
       connection.query(query, params, (err, result) => {
         console.log('connection released? : ' + connect._freeConnections.indexOf(connection));
         connection.release();
