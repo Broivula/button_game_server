@@ -4,24 +4,15 @@ const mysql = require('mysql');
 const uuidv4 = require('uuid/v4');
 
 
-const createConnectionPool = () => {
-
-  const pool =  mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database: process.env.DB,
-    password: process.env.DB_PASS,
-    connectionLimit: 10,
-    waitForConnections: true,
-    queueLimit: 0
-  });
-
-
-  return  pool.promise();
-
-};
-
-const pool = createConnectionPool();
+const pool =  mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  database: process.env.DB,
+  password: process.env.DB_PASS,
+  connectionLimit: 10,
+  waitForConnections: true,
+  queueLimit: 0
+});
 
 
 const errorHandler = (err) => {
@@ -40,7 +31,7 @@ const errorHandler = (err) => {
 
 const executeQuery =  (query, params) => new Promise ( (resolve, reject) => async () =>{
   try {
-      await pool().getConnection((err, connection) => {
+      await pool.getConnection((err, connection) => {
       if (err) {
         console.log('error getting connection. error msg: ');
         console.log(err);
