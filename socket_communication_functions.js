@@ -187,15 +187,22 @@ const handleIncomingSocketData = (socket, data) => {
           db.checkIfUserHasScore(parsedData.username, parsedData.roomNumber).then(((res) => {
             const parsed = Object.values(res[0]);
             if (parsed[0] === 0) {
-              db.updatePlayerScore(parsedData.username, parsedData.roomNumber, game.playerStartingScore);
+              console.log('new player!');
+              db.updatePlayerScore(parsedData.username, parsedData.roomNumber, game.playerStartingScore).then(() => {
+                const players = game.getRoomPlayerList(parsedData.roomNumber);
+                db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
+                  sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
+                }));
+              })
+            }else {
+              const players = game.getRoomPlayerList(parsedData.roomNumber);
+              db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
+                sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
+              }));
             }
-            const players = game.getRoomPlayerList(parsedData.roomNumber);
-            db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
-              sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
-            }));
           }));
         } else {
-          socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL, null);
+          socketErrorMsg(socket, ErrorMsgCodes.ROOM_FULL, null);
         }
         break;
 
