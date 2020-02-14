@@ -33,6 +33,7 @@ app.post('/post/check_user_availability', (req, res) => {
   const { username } = req.body;
   db.tokenCheckPipeline(token, db.checkIfUserExists(username)).then((result) => {
     const parsed = Object.values(result[0]);
+    console.log('username: ' + username + ' is available: ' + parsed);
     let available;
     (parsed === 1) ? available = false : available = true;
     res.json({ username_available: available });
