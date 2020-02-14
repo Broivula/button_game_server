@@ -1,4 +1,4 @@
-/* eslint-disable max-len */
+/* eslint-disable max-len, no-console */
 const db = require('./database');
 const game = require('./game_file');
 
@@ -165,13 +165,13 @@ const handleClientDisconnect = (client) => {
 /**
  * HandleIncomingSocketData is a function, which takes in the incoming byte data, turns it into a string,
  * and then does whatever the incoming data does. Nothing crucial is done before a token is checked from the message.
+ *
  * @param socket
  * @param data
  */
 
 
 const handleIncomingSocketData = (socket, data) => {
-
   const parsedData = JSON.parse(data.toString());
   db.tokenCheckPipeline(parsedData.token).then(() => {
     socket._sockname = parsedData.username;
@@ -193,8 +193,8 @@ const handleIncomingSocketData = (socket, data) => {
                 db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
                   sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
                 }));
-              })
-            }else {
+              });
+            } else {
               const players = game.getRoomPlayerList(parsedData.roomNumber);
               db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
                 sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
@@ -223,13 +223,13 @@ const handleIncomingSocketData = (socket, data) => {
             playerScore--;
           }
           db.updatePlayerScore(parsedData.username, parsedData.roomNumber, playerScore)
-              .then(() => {
-                db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
-                    .then(((res) => {
-                          sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients, amountWon);
-                        }
-                    ));
-              });
+            .then(() => {
+              db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
+                .then(((res) => {
+                  sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients, amountWon);
+                }
+                ));
+            });
         }
         break;
 
@@ -255,7 +255,7 @@ const handleIncomingSocketData = (socket, data) => {
         });
         break;
       default:
-        socketErrorMsg(socket, sf.ErrorMsgCodes.UNKNOWN, 'hit the default case, which should be impossible');
+        socketErrorMsg(socket, ErrorMsgCodes.UNKNOWN, 'hit the default case, which should be impossible');
         break;
     }
   }).catch((err) => {
