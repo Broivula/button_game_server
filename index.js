@@ -67,91 +67,9 @@ server.on('connection', (socket) => {
   socket.on('data', (data) => {
     if (data.length > 5) {
       try {
-        const parsedData = JSON.parse(data.toString());
-        db.tokenCheckPipeline(parsedData.token).then(() => {
-          socket._sockname = parsedData.username;
-          const roomData = game.getRoomData(parsedData.roomNumber);
-          switch (parsedData.event) {
-            case 'JOIN_ROOM':
-              if (game.checkIfRoomAvailable(parsedData.roomNumber)) {
-                sf.createNewConnection({
-                  socket,
-                  username: parsedData.username,
-                  roomNumber: parsedData.roomNumber,
-                });
-                db.checkIfUserHasScore(parsedData.username, parsedData.roomNumber).then(((res) => {
-                  const parsed = Object.values(res[0]);
-                  if (parsed[0] === 0) {
-                    db.updatePlayerScore(parsedData.username, parsedData.roomNumber, startingScore);
-                  }
-                  const players = game.getRoomPlayerList(parsedData.roomNumber);
-                  db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
-                    sf.sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
-                  }));
-                }));
-              } else {
-                sf.socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL, null);
-              }
-              break;
-
-            // if the incoming data is the data received from a click
-            case 'SEND_CLICK':
-              if (parsedData.playerScore > 0) {
-                const newClickAmount = game.addClick(roomData);
-                let { playerScore } = parsedData;
-                let didClickWin = false;
-                let amountWon = 0;
-
-                game.updateGameRoomClickAmount(newClickAmount, parsedData.roomNumber);
-                if (newClickAmount % 10 === 0) {
-                  amountWon = game.checkClick(newClickAmount);
-                  playerScore += amountWon;
-                  didClickWin = true;
-                } else {
-                  playerScore--;
-                }
-                db.updatePlayerScore(parsedData.username, parsedData.roomNumber, playerScore)
-                  .then(() => {
-                    db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
-                      .then(((res) => {
-                        sf.sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients, amountWon);
-                      }
-                      ));
-                  });
-              }
-              break;
-
-            case 'END_TURN':
-              const players = game.getRoomPlayerList(parsedData.roomNumber);
-              game.passTurnToNextClient(roomData);
-              db.getRoomScores(parsedData.roomNumber, players).then(((res) => {
-                sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
-              }));
-              break;
-
-
-            case 'EXIT_ROOM':
-              sf.handleClientDisconnect(socket);
-              // socket.end();
-              break;
-
-            case 'NEW_GAME':
-              db.updatePlayerScore(parsedData.username, parsedData.roomNumber, startingScore).then(() => {
-                db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber)).then((res) => {
-                  sf.sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
-                });
-              });
-              break;
-            default:
-              sf.socketErrorMsg(socket, sf.ErrorMsgCodes.UNKNOWN, 'hit the default case, which should be impossible');
-              break;
-          }
-        }).catch((err) => {
-          console.log('invalid data sent via socket');
-          console.log(err);
-        });
+        sf.handleIncomingSocketData(socket, data);
       } catch (err) {
-        console.log('error parsing incoming socket data');
+        console.log('error handling incoming socket data');
         console.log(err);
       }
     }

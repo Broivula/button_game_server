@@ -4,6 +4,7 @@ require('net');
 const rooms = [];
 const maxClientsPerRoom = 10;
 const maxRooms = 3;
+const playerStartingScore = 20;
 
 /**
  * InitiateGame is a function, which initiates the games with the given values.
@@ -212,4 +213,5 @@ module.exports = {
   instantiateGameRooms,
   getGameRoomsData,
   syncTurnHolderToPlayerAmount,
+  playerStartingScore
 };

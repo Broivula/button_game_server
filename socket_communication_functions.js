@@ -162,6 +162,101 @@ const handleClientDisconnect = (client) => {
   msgToDisconnectedClientsRoom(roomData);
 };
 
+/**
+ * HandleIncomingSocketData is a function, which takes in the incoming byte data, turns it into a string,
+ * and then does whatever the incoming data does. Nothing crucial is done before a token is checked from the message.
+ * @param socket
+ * @param data
+ */
+
+
+const handleIncomingSocketData = (socket, data) => {
+
+  const parsedData = JSON.parse(data.toString());
+  db.tokenCheckPipeline(parsedData.token).then(() => {
+    socket._sockname = parsedData.username;
+    const roomData = game.getRoomData(parsedData.roomNumber);
+    switch (parsedData.event) {
+      case 'JOIN_ROOM':
+        if (game.checkIfRoomAvailable(parsedData.roomNumber)) {
+          createNewConnection({
+            socket,
+            username: parsedData.username,
+            roomNumber: parsedData.roomNumber,
+          });
+          db.checkIfUserHasScore(parsedData.username, parsedData.roomNumber).then(((res) => {
+            const parsed = Object.values(res[0]);
+            if (parsed[0] === 0) {
+              db.updatePlayerScore(parsedData.username, parsedData.roomNumber, game.playerStartingScore);
+            }
+            const players = game.getRoomPlayerList(parsedData.roomNumber);
+            db.getRoomScores(parsedData.roomNumber, players).then(((result) => {
+              sendRoomScoresToClients(parsedData.roomNumber, result, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
+            }));
+          }));
+        } else {
+          socketErrorMsg(socket, sf.ErrorMsgCodes.ROOM_FULL, null);
+        }
+        break;
+
+        // if the incoming data is the data received from a click
+      case 'SEND_CLICK':
+        if (parsedData.playerScore > 0) {
+          const newClickAmount = game.addClick(roomData);
+          let { playerScore } = parsedData;
+          let didClickWin = false;
+          let amountWon = 0;
+
+          game.updateGameRoomClickAmount(newClickAmount, parsedData.roomNumber);
+          if (newClickAmount % 10 === 0) {
+            amountWon = game.checkClick(newClickAmount);
+            playerScore += amountWon;
+            didClickWin = true;
+          } else {
+            playerScore--;
+          }
+          db.updatePlayerScore(parsedData.username, parsedData.roomNumber, playerScore)
+              .then(() => {
+                db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber))
+                    .then(((res) => {
+                          sendRoomScoresToClients(parsedData.roomNumber, res, newClickAmount, roomData.turnHolder, didClickWin, roomData.clients, amountWon);
+                        }
+                    ));
+              });
+        }
+        break;
+
+      case 'END_TURN':
+        const players = game.getRoomPlayerList(parsedData.roomNumber);
+        game.passTurnToNextClient(roomData);
+        db.getRoomScores(parsedData.roomNumber, players).then(((res) => {
+          sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
+        }));
+        break;
+
+
+      case 'EXIT_ROOM':
+        handleClientDisconnect(socket);
+        // socket.end();
+        break;
+
+      case 'NEW_GAME':
+        db.updatePlayerScore(parsedData.username, parsedData.roomNumber, game.playerStartingScore).then(() => {
+          db.getRoomScores(parsedData.roomNumber, game.getRoomPlayerList(parsedData.roomNumber)).then((res) => {
+            sendRoomScoresToClients(parsedData.roomNumber, res, roomData.clickAmount, roomData.turnHolder, false, roomData.clients, null);
+          });
+        });
+        break;
+      default:
+        socketErrorMsg(socket, sf.ErrorMsgCodes.UNKNOWN, 'hit the default case, which should be impossible');
+        break;
+    }
+  }).catch((err) => {
+    console.log('token data invalid');
+    console.log(err);
+  });
+};
+
 
 module.exports = {
   createNewConnection,
@@ -170,4 +265,5 @@ module.exports = {
   handleClientDisconnect,
   socketErrorMsg,
   ErrorMsgCodes,
+  handleIncomingSocketData,
 };
