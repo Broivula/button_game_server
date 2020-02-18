@@ -70,6 +70,9 @@ server.on('connection', (socket) => {
         sf.handleIncomingSocketData(socket, data);
       } catch (err) {
         console.log('error handling incoming socket data');
+        console.log('sent message: ');
+        console.log(data.toString());
+        console.log('error msg: ');
         console.log(err);
       }
     }
